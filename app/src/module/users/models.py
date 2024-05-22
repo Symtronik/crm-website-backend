@@ -1,6 +1,6 @@
 from ...config.database import DBBase, engine
 from sqlalchemy import Column, Integer, String, Boolean, Float
-from sqlalchemy.orm import relationship
+
 
 
 class User(DBBase):
@@ -14,6 +14,7 @@ class User(DBBase):
     email = Column(String(50), unique=True, index=True)
     permission = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
+    refresh_token = Column(String(255))
 
 
 User.metadata.create_all(bind=engine)

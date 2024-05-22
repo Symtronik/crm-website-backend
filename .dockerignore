@@ -1,0 +1,10 @@
+# Pliki i katalogi wygenerowane przez Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Środowisko wirtualne
+venv/
+env/
+*.env

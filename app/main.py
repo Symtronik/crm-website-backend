@@ -15,6 +15,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 origins = [
     'http://localhost:5173',
+    'http://127.0.0.1:5173',
     'https://yourfrontenddomain.com',
 
 ]
@@ -30,7 +31,7 @@ app.add_middleware(
 
 
 app.include_router(users.router)
-app.include_router(parking.router)
+# app.include_router(parking.router)
 
 
 

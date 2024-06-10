@@ -14,7 +14,7 @@ class User(DBBase):
     email = Column(String(50), unique=True, index=True)
     permission = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    refresh_token = Column(String(255))
+    refresh_token = Column(String(255), nullable=True)
 
 
 User.metadata.create_all(bind=engine)

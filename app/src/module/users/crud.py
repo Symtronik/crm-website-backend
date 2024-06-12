@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from app.src.config.settings import get_settings
+from .models import User, UserApplication
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -17,6 +18,18 @@ def create_user(db: Session, user: schemas.UserCreate):
     db.commit()
     return "complete"
 
+
+def update_user_data(db: Session, user_id: int, user_update: schemas.UserUpdate):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise ValueError("User not found")
+
+    for key, value in user_update.dict(exclude_unset=True).items():
+        setattr(user, key, value)
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 def authenticate_user(username: str, password: str, db: Session):
     user = db.query(models.User).filter(models.User.username == username).first()
@@ -47,6 +60,25 @@ def get_user_by_refresh_token(refresh_token: str, db: Session):
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+def create_access_application(db: Session, application_name: str, user_id: int):
+    application_token = create_access_token({'application_name': application_name, 'user_id': user_id})
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise ValueError("User not found")
+
+    new_application = UserApplication(application_name=application_name, application_token=application_token,
+                                      user_id=user_id)
+
+    db.add(new_application)
+
+    db.commit()
+
+    db.refresh(new_application)
+
+    return new_application
 
 
 def get_user(db: Session, username: str):

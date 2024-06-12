@@ -1,5 +1,6 @@
 from ...config.database import DBBase, engine
-from sqlalchemy import Column, Integer, String, Boolean, Float
+from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
+from sqlalchemy.orm import relationship
 
 
 
@@ -16,5 +17,16 @@ class User(DBBase):
     is_active = Column(Boolean, default=True)
     refresh_token = Column(String(255), nullable=True)
 
+    applications = relationship("UserApplication", back_populates="owner")
+class UserApplication(DBBase):
+    __tablename__ = 'user_applications'
+
+    id = Column(Integer, primary_key=True, index=True)
+    application_name = Column(String(255))
+    application_token = Column(String(255))
+    user_id = Column(Integer, ForeignKey('users.id'))
+
+    owner = relationship("User", back_populates="applications")
 
 User.metadata.create_all(bind=engine)
+

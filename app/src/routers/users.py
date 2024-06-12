@@ -2,12 +2,12 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from ..common.dependencies import get_db
 from ..module.users.crud import *
-from ..module.users.schemas import UserCreate, UserResponse
+from ..module.users.schemas import UserCreate, UserResponse, UserApplicationResponse, UserApplicationCreate
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from datetime import timedelta
 from app.src.config.settings import get_settings
-from ..common.auth import get_current_user
+from ..common.auth import get_current_user, get_current_application
 
 
 router = APIRouter()
@@ -57,6 +57,16 @@ def read_user(username: str, db: Session = Depends(get_db), current_user: str = 
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
+
+@router.put("/user-info/{user_id}", tags=["users"])
+def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session = Depends(get_db)):
+    try:
+        updated_user = update_user_data(db=db, user_id=user_id, user_update=user_update)
+        return updated_user
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.post("/refresh-token", tags=["users"])
 def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     user = get_user_by_refresh_token(refresh_token, db)
@@ -76,3 +86,22 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     db.commit()
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/applications", response_model=UserApplicationResponse, tags=["users"])
+def create_application(application: UserApplicationCreate, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+    try:
+        new_application = create_access_application(
+            db=db,
+            application_name=application.application_name,
+            user_id=application.user_id
+        )
+        return new_application
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/application-info/{application_id}", response_model=UserApplicationResponse, tags=["users"])
+def read_application(application_id: int, db: Session = Depends(get_db)):
+    application = db.query(UserApplication).filter(UserApplication.id == application_id).first()
+    if application is None:
+        raise HTTPException(status_code=404, detail=f'Application not found {application_id}')
+    return application

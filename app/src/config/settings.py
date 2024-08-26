@@ -20,4 +20,8 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings():
-    return Settings()
+    settings = Settings()
+    # Debugowanie
+    print(f"SECRET_KEY: {settings.SECRET_KEY}")
+    print(f"DATABASE_URL: {settings.DATABASE_URL}")
+    return settings

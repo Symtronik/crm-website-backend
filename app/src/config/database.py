@@ -7,7 +7,7 @@ from app.src.config.settings import get_settings
 settings = get_settings()
 
 engine = create_engine(
-    url=settings.POSTGRES_DATABASE_URL,
+    url=settings.DATABASE_URL,
     pool_pre_ping=True,
     pool_size=100,
     max_overflow=50,

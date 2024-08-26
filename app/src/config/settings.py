@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     HASHING_ALGORITHM: str = os.environ.get("HASHING_ALGORITHM")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
     # DB Settings
-    POSTGRES_DATABASE_URL: str = os.environ.get("POSTGRES_DATABASE_URL")
+    DATABASE_URL: str = os.environ.get("DATABASE_URL")
 
     class Config:
 

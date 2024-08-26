@@ -4,33 +4,12 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from ..config.settings import get_settings
 from ..module.users.crud import get_user
-from ..module.users.models import UserApplication
+from ..module.users.models import UserApplication, User
 from . import dependencies
+from typing import Union
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# def verify_token(token: str, credentials_exception):
-#     try:
-#         # Dekodowanie tokena
-#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-#
-#         # Pobranie identyfikatora użytkownika z payload
-#         user_id: str = payload.get("sub")
-#         if user_id is None:
-#             raise credentials_exception
-#
-#         # Sprawdzenie ważności tokena (opcjonalnie)
-#         expire = payload.get("exp")
-#         if expire:
-#             expire = datetime.fromtimestamp(expire)
-#             if datetime.utcnow() > expire:
-#                 raise credentials_exception
-#
-#         return user_id  # lub zwróć obiekt użytkownika, jeśli potrzebujesz więcej informacji
-#     except JWTError:
-#         raise credentials_exception
-
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(dependencies.get_db)):
     credentials_exception = HTTPException(
@@ -47,9 +26,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
 
     user = get_user(db, username=username)
-    if user is None:
-        raise credentials_exception
-    return user
+    if user is not None:
+       return user
+
+    application = db.query(UserApplication).filter(UserApplication.application_token == token).first()
+    if application is not None:
+        return application
+
+    raise credentials_exception
 
 def get_current_application(token: str = Depends(oauth2_scheme), db: Session = Depends(dependencies.get_db)):
     credentials_exception = HTTPException(
@@ -70,3 +54,6 @@ def get_current_application(token: str = Depends(oauth2_scheme), db: Session = D
     if application is None:
         raise credentials_exception
     return application
+
+
+

@@ -46,7 +46,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
+    if "user_id" not in data:
+        to_encode.update({"exp": expire})
     encode_jwt = jwt.encode(to_encode, get_settings().SECRET_KEY, algorithm=get_settings().HASHING_ALGORITHM)
     return encode_jwt
 
@@ -63,13 +64,15 @@ def get_user_by_refresh_token(refresh_token: str, db: Session):
 
 
 def create_access_application(db: Session, application_name: str, user_id: int):
-    application_token = create_access_token({'application_name': application_name, 'user_id': user_id})
+    application_data = {"sub": application_name, "user_id": user_id}
+    token = create_access_token(data=application_data)
+
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise ValueError("User not found")
 
-    new_application = UserApplication(application_name=application_name, application_token=application_token,
+    new_application = UserApplication(application_name=application_name, application_token=token,
                                       user_id=user_id)
 
     db.add(new_application)

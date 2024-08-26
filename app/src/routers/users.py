@@ -88,7 +88,8 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/applications", response_model=UserApplicationResponse, tags=["users"])
-def create_application(application: UserApplicationCreate, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+def create_application(application: UserApplicationCreate, db: Session = Depends(get_db),
+                       current_user: str = Depends(get_current_user)):
     try:
         new_application = create_access_application(
             db=db,
@@ -100,7 +101,7 @@ def create_application(application: UserApplicationCreate, db: Session = Depends
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/application-info/{application_id}", response_model=UserApplicationResponse, tags=["users"])
-def read_application(application_id: int, db: Session = Depends(get_db)):
+def read_application(application_id: int, db: Session = Depends(get_db), current_application: UserApplication = Depends(get_current_application)):
     application = db.query(UserApplication).filter(UserApplication.id == application_id).first()
     if application is None:
         raise HTTPException(status_code=404, detail=f'Application not found {application_id}')

@@ -1,6 +1,7 @@
 from ...config.database import DBBase, engine
 from sqlalchemy import Column, Integer, String, Boolean, Float, Date, Time, DateTime
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 STATUS_BOOKED = 0
 STATUS_IN_PARKING = 1
@@ -19,14 +20,12 @@ class Parking(DBBase):
     departure_date = Column(Date)
     departure_fly_number= Column(String(20), index=True)
     return_date = Column(Date)
-    departure_time = Column(Time)
-    return_time = Column(Time)
+    departure_time = Column(String(6))
+    return_time = Column(String(6))
     return_fly_number = Column(String(20), index=True)
     status = Column(Integer, default=STATUS_BOOKED)
     parking_number = Column(String(20))
-    created_at = Column(DateTime)
-    client_ip = Column(String(45))
-
-
+    created_at = Column(DateTime, default=datetime.utcnow)  # Ustawienie domyślnej wartości
+    client_ip = Column(String(45))  # Możesz ustawić na None w schemacie
 
 Parking.metadata.create_all(bind=engine)

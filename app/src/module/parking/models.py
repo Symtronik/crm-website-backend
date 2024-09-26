@@ -1,5 +1,5 @@
 from ...config.database import DBBase, engine
-from sqlalchemy import Column, Integer, String, Boolean, Float, Date, Time
+from sqlalchemy import Column, Integer, String, Boolean, Float, Date, Time, DateTime
 from sqlalchemy.orm import relationship
 
 STATUS_BOOKED = 0
@@ -24,6 +24,8 @@ class Parking(DBBase):
     return_fly_number = Column(String(20), index=True)
     status = Column(Integer, default=STATUS_BOOKED)
     parking_number = Column(String(20))
+    created_at = Column(DateTime)
+    client_ip = Column(String(45))
 
 
 

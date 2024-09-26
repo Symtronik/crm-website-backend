@@ -10,13 +10,12 @@ class ParkingCreate(BaseModel):
     departure_date: date
     departure_fly_number: str
     return_date: date
-    departure_time: str  # Przyjmujemy jako string w formacie "HH:MM"
-    return_time: str  # Przyjmujemy jako string w formacie "HH:MM"
+    departure_time: str
+    return_time: str
     return_fly_number: str
-    status: int = 0  # Domyślnie STATUS_BOOKED
+    status: int = 0
     parking_number: str
-    created_at: datetime  # Czas dodania klienta
-    client_ip: str  # Adres IP klienta
+
 
     @field_validator('departure_time', 'return_time')
     def validate_time(cls, v):

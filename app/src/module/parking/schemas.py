@@ -1,8 +1,17 @@
 from pydantic import BaseModel, EmailStr
+from datetime import date, time
 
 class ParkingCreate(BaseModel):
-
-    registation_number: str
+    registration_number: str
     surname: str
     name: str
-    email: str
+    email: EmailStr
+    phone: str
+    departure_date: date
+    departure_fly_number: str
+    return_date: date
+    departure_time: time
+    return_time: time
+    return_fly_number: str
+    status: int = 0  # Domyślnie STATUS_BOOKED
+    parking_number: str

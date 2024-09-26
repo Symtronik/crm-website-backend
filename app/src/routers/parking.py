@@ -23,7 +23,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.post("/", response_model=ParkingCreate, status_code=201)
+@router.post("", response_model=ParkingCreate, status_code=201)
 def create_parking(
         parking: ParkingCreate,
         db: Session = Depends(get_db),
@@ -32,7 +32,7 @@ def create_parking(
     return add_parking(db=db, parking=parking)
 
 
-@router.get("/", response_model=List[ParkingCreate])
+@router.get("", response_model=List[ParkingCreate])
 def read_parkings(
     skip: int = 0,
     limit: int = 100,

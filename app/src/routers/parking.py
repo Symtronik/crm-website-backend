@@ -5,8 +5,8 @@ from typing import List
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from ..common.dependencies import get_db
 from ..common.auth import get_current_user
-from ..module.parking.crud import add_parking, get_parking
-from ..module.parking.schemas import ParkingCreate
+from ..module.parking.crud import add_parking, get_parking, put_parking
+from ..module.parking.schemas import ParkingCreate, ParkingResponse, ParkingUpdate
 
 
 
@@ -32,14 +32,27 @@ def create_parking(
     return add_parking(db=db, parking=parking)
 
 
-@router.get("", response_model=List[ParkingCreate])
+@router.get("", response_model=List[ParkingResponse])
 def read_parkings(
-    skip: int = 0,
-    limit: int = 100,
+
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),
 
 ):
     # Tylko zalogowani użytkownicy mogą przeglądać parkingi
-    parking = get_parking(db, skip=skip, limit=limit)
+    parking = get_parking(db)
     return parking
+
+@router.put("/{parking_id}", response_model=ParkingResponse)
+def update_parking(
+        parking_id: int,
+        parking_update: ParkingUpdate,
+        db:  Session = Depends(get_db),
+        current_user: str = Depends(get_current_user)
+):
+    updated_parking = put_parking(db=db, parking_id=parking_id, parking_update=parking_update)
+
+    if updated_parking is None:
+        raise HTTPException(status_code=404, detail="Parking not found")
+
+    return updated_parking

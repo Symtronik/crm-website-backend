@@ -5,15 +5,28 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from app.src.config.settings import get_settings
-from .models import User, UserApplication
+from .models import User, UserApplication, Role
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_user(db: Session, user: schemas.UserCreate):
+    print(f"Creating user: {user}")  # Dodaj ten wiersz, aby zobaczyć, co jest przekazywane
     hashed_password = pwd_context.hash(user.password)
-    db_user = models.User(username=user.username, hashed_password=hashed_password, name=user.name, surname=user.surname,
-                          email=user.email)
+
+    default_role = db.query(models.Role).filter(models.Role.name == "user").first()
+
+    if not default_role:
+        raise Exception("Default role 'user' does not exist.")
+
+    db_user = models.User(
+        username=user.username,
+        hashed_password=hashed_password,
+        name=user.name,
+        surname=user.surname,
+        email=user.email,
+        role_id=default_role.id
+    )
     db.add(db_user)
     db.commit()
     return "complete"

@@ -40,15 +40,8 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = get_user(db, username=user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username alredy registered")
+
     return create_user(db=db, user=user)
-
-
-# @router.get("/user-info/{username}", response_model=schemas.UserResponse, tags=["users"])
-# def read_user(username: str, db: Session = Depends(get_db)):
-#     db_user = get_user(db, username=username)
-#     if db_user is None:
-#         raise HTTPException(status_code=404, detail="User not found")
-#     return db_user
 
 @router.get("/user-info/{username}", response_model=UserResponse, tags=["users"])
 def read_user(username: str, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
@@ -59,16 +52,33 @@ def read_user(username: str, db: Session = Depends(get_db), current_user: str = 
 
 
 @router.put("/user-info/{user_id}", tags=["users"])
-def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session = Depends(get_db)):
+def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session = Depends(get_db),
+                current_user: User = Depends(get_current_user)):
     try:
+        # Sprawdzenie, czy aktualizowana rola to admin
+        if user_update.role:
+            admin_role_id = db.query(models.Role).filter(models.Role.name == "admin").first().id
+            if user_update.role == admin_role_id and current_user.role.name != "admin":
+                raise HTTPException(status_code=403, detail="You do not have permission to assign the admin role.")
+
         updated_user = update_user_data(db=db, user_id=user_id, user_update=user_update)
         return updated_user
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/roles", tags=["users"])
+def get_roles(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Zwracaj wszystkie role, jeśli użytkownik jest adminem
+    if current_user.role.name == "admin":
+        roles = db.query(models.Role).all()
+    else:
+        roles = db.query(models.Role).filter(models.Role.name != "admin").all()
+
+    return roles
+
 @router.post("/refresh-token", tags=["users"])
-def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+def refresh_token(refresh_token: str, db: Session = Depends(get_db),current_user: str = Depends(get_current_user)):
     user = get_user_by_refresh_token(refresh_token, db)
     if not user:
         raise HTTPException(

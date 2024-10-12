@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
     # DB Settings
     DATABASE_URL: str = os.getenv("DATABASE_URL")
+    # User
+    ADMIN_USERNAME: str = os.environ.get("ADMIN_USERNAME")
+    ADMIN_PASSWORD: str = os.environ.get("ADMIN_PASSWORD")
+    ADMIN_EMAIL: str = os.environ.get("ADMIN_EMAIL")
+
 
     class Config:
 

@@ -11,13 +11,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_user(db: Session, user: schemas.UserCreate):
-    print(f"Creating user: {user}")  # Dodaj ten wiersz, aby zobaczyć, co jest przekazywane
+    # print(f"Creating user: {user}")  # Dodaj ten wiersz, aby zobaczyć, co jest przekazywane
     hashed_password = pwd_context.hash(user.password)
 
-    default_role = db.query(models.Role).filter(models.Role.name == "user").first()
+    # default_role = db.query(models.Role).filter(models.Role.name == "user").first()
 
-    if not default_role:
-        raise Exception("Default role 'user' does not exist.")
+    # if not default_role:
+    #     raise Exception("Default role 'user' does not exist.")
 
     db_user = models.User(
         username=user.username,
@@ -25,11 +25,11 @@ def create_user(db: Session, user: schemas.UserCreate):
         name=user.name,
         surname=user.surname,
         email=user.email,
-        role_id=default_role.id
+        # role_id=default_role.id
     )
     db.add(db_user)
     db.commit()
-    return "complete"
+    return db_user
 
 
 def update_user_data(db: Session, user_id: int, user_update: schemas.UserUpdate):
@@ -99,3 +99,26 @@ def create_access_application(db: Session, application_name: str, user_id: int):
 
 def get_user(db: Session, username: str):
     return db.query(models.User).filter(models.User.username == username).first()
+
+def get_roles(db: Session):
+    return db.query(Role).all()
+
+def create_role(db: Session, role: schemas.RoleBase):
+    db_role = Role(name=role.name)
+    for perm in role.permissions:
+        permission = db.query(models.Permission).filter(models.Permission.name == perm.name).first()
+        if permission:
+            db_role.permissions.append(permission)
+    db.add(db_role)
+    db.commit()
+    db.refresh(db_role)
+    return db_role
+
+def add_permission_to_role(db: Session, role_id: int, permission_id: int):
+    role = db.query(Role).filter(Role.id == role_id).first()
+    permission = db.query(models.Permission).filter(models.Permission.id == permission_id).first()
+    if role and permission:
+        role.permissions.append(permission)
+        db.commit()
+        return role
+    return None

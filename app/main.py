@@ -6,7 +6,7 @@ from app.src.config.database import initialize_database
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
-from .src.routers import users,parking
+from .src.routers import users,parking,documents
 
 load_dotenv()
 
@@ -36,8 +36,11 @@ app.add_middleware(
 async def startup_event():
     initialize_database()
 
-app.include_router(users.router)
+app.include_router(users.router, tags=["users"])
 app.include_router(parking.router)
+app.include_router(documents.router)
+
+# app.include_router(users.router, prefix="/api", tags=["users"])
 
 
 

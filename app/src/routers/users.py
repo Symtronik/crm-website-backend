@@ -2,12 +2,13 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from ..common.dependencies import get_db
 from ..module.users.crud import *
-from ..module.users.schemas import UserCreate, UserResponse, UserApplicationResponse, UserApplicationCreate
+from ..module.users.schemas import UserCreate, UserResponse, UserApplicationResponse, UserApplicationCreate, RoleBase
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from datetime import timedelta
 from app.src.config.settings import get_settings
 from ..common.auth import get_current_user, get_current_application
+from typing import List
 
 
 router = APIRouter()
@@ -67,18 +68,18 @@ def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session = Dep
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/roles", tags=["users"])
-def get_roles(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Zwracaj wszystkie role, jeśli użytkownik jest adminem
-    if current_user.role.name == "admin":
-        roles = db.query(models.Role).all()
-    else:
-        roles = db.query(models.Role).filter(models.Role.name != "admin").all()
-
-    return roles
+# @router.get("/roles", tags=["users"])
+# def get_roles(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+#     # Zwracaj wszystkie role, jeśli użytkownik jest adminem
+#     if current_user.role.name == "admin":
+#         roles = db.query(models.Role).all()
+#     else:
+#         roles = db.query(models.Role).filter(models.Role.name != "admin").all()
+#
+#     return roles
 
 @router.post("/refresh-token", tags=["users"])
-def refresh_token(refresh_token: str, db: Session = Depends(get_db),current_user: str = Depends(get_current_user)):
+def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     user = get_user_by_refresh_token(refresh_token, db)
     if not user:
         raise HTTPException(
@@ -116,3 +117,32 @@ def read_application(application_id: int, db: Session = Depends(get_db), current
     if application is None:
         raise HTTPException(status_code=404, detail=f'Application not found {application_id}')
     return application
+
+
+
+@router.post("/users/", response_model=UserResponse)
+def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = get_user(db, username=user.username)
+    if db_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+
+    # Przypisanie roli do użytkownika
+    user_role = user.role_id if user.role_id else 2  # Domyślna rola to 2 (np. "user")
+    user.role_id = user_role
+
+    return create_user(db=db, user=user)
+
+@router.get("/roles/", response_model=List[RoleBase])
+def read_roles(db: Session = Depends(get_db)):
+    return get_roles(db=db)
+
+@router.post("/roles/", response_model=RoleBase)
+def add_role(role: RoleBase, db: Session = Depends(get_db)):
+    return create_role(db=db, role=role)
+
+@router.post("/roles/{role_id}/permissions/{permission_id}/")
+def assign_permission_to_role(role_id: int, permission_id: int, db: Session = Depends(get_db)):
+    role = add_permission_to_role(db, role_id, permission_id)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role or Permission not found")
+    return role

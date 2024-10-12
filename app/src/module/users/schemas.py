@@ -1,5 +1,14 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
+
+
+class PermissionBase(BaseModel):
+    name: str
+
+class RoleBase(BaseModel):
+    name: str
+    permissions: List[PermissionBase] = []
+
 
 class UserCreate(BaseModel):
     name: str
@@ -8,12 +17,6 @@ class UserCreate(BaseModel):
     username: str
     password: str
 
-class UserUpdate(BaseModel):
-    surname: Optional[str]
-    name: Optional[str]
-    email: Optional[EmailStr]
-    # permission: Optional[int]
-    # is_active: Optional[bool]
 
 class UserResponse(BaseModel):
     id: int
@@ -21,6 +24,14 @@ class UserResponse(BaseModel):
     surname: str
     email: EmailStr
     username: str
+
+
+class UserUpdate(BaseModel):
+    surname: Optional[str]
+    name: Optional[str]
+    email: Optional[EmailStr]
+    # permission: Optional[int]
+    # is_active: Optional[bool]
 
 
 class UserApplicationCreate(BaseModel):

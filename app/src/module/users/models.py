@@ -1,8 +1,8 @@
-from ...config.database import DBBase, engine
+from ...config.database import DBBase
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Table
 from sqlalchemy.orm import relationship
 
-# Tabela łącząca role z uprawnieniami
+# Tabela asocjacyjna łącząca role i uprawnienia
 role_permissions = Table(
     'role_permissions',
     DBBase.metadata,
@@ -10,16 +10,27 @@ role_permissions = Table(
     Column('permission_id', ForeignKey('permissions.id'))
 )
 
+# Model Permission (Uprawnienia)
+class Permission(DBBase):
+    __tablename__ = 'permissions'
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+
+    roles = relationship('Role', secondary=role_permissions, back_populates='permissions')
+
+# Model Role (Rola)
 class Role(DBBase):
-    __tablename__ = 'roles'  # Zmieniono nazwę tabeli na liczbę mnogą
+    __tablename__ = 'roles'
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     permissions = relationship('Permission', secondary=role_permissions, back_populates='roles')
     users = relationship("User", back_populates="role")
 
+# Model User (Użytkownik)
 class User(DBBase):
-    __tablename__ = 'users'  # Poprawiono format zapisu zmiennej __tablename__
+    __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True)
@@ -29,13 +40,14 @@ class User(DBBase):
     email = Column(String(50), unique=True, index=True)
     is_active = Column(Boolean, default=True)
     refresh_token = Column(String(255), nullable=True)
-    role_id = Column(Integer, ForeignKey('roles.id'))  # Poprawiono nazwę tabeli w ForeignKey
-    role = relationship("Role", back_populates="users")  # Relacja "back_populates" zgodna z modelem Role
+    role_id = Column(Integer, ForeignKey('roles.id'))
+    role = relationship("Role", back_populates="users")
     applications = relationship("UserApplication", back_populates="owner")
 
     def has_permission(self, permission_name: str):
         return any(p.name == permission_name for p in self.role.permissions)
 
+# Model Application (Aplikacja użytkownika)
 class UserApplication(DBBase):
     __tablename__ = 'user_applications'
 
@@ -45,14 +57,3 @@ class UserApplication(DBBase):
     user_id = Column(Integer, ForeignKey('users.id'))
 
     owner = relationship("User", back_populates="applications")
-
-
-class Permission(DBBase):
-    __tablename__ = 'permissions'
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
-
-    roles = relationship('Role', secondary='role_permissions', back_populates='permissions')
-
-

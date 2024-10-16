@@ -27,24 +27,20 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def initialize_database():
-    from app.src.module.users.models import Role, User  # Importowanie modeli wewnątrz funkcji
-    """
-    Inicjalizuje bazę danych, tworzy domyślne role oraz admina, jeśli nie istnieją.
-    """
-    # Tworzenie tabel
+    from app.src.module.users.models import Role, User, Permission
+
     DBBase.metadata.create_all(bind=engine)
 
     db = SessionLocal()
 
     try:
-
+        edit_documents_permissions = db.query(Permission).filter_by(name="edit_documents").first()
         super_admin_role = db.query(Role).filter_by(name="super_admin").first()
         admin_role = db.query(Role).filter_by(name="admin").first()
         user_role = db.query(Role).filter_by(name="user").first()
-        user_silver_role = db.query(Role).filter_by(name="user_silver").first()
-        user_gold_role = db.query(Role).filter_by(name="user_gold").first()
 
-        if not admin_role:
+
+        if not super_admin_role:
             super_admin_role = Role(name="super_admin")
             db.add(super_admin_role)
 
@@ -56,13 +52,15 @@ def initialize_database():
             user_role = Role(name="user")
             db.add(user_role)
 
-        if not user_silver_role:
-            user_silver_role = Role(name="user_silver")
-            db.add(user_silver_role)
+        if not edit_documents_permissions:
+            edit_documents_permissions= Permission(name="edit_documents")
+            db.add(edit_documents_permissions)
 
-        if not user_gold_role:
-            user_gold_role = Role(name="user_gold")
-            db.add(user_gold_role)
+        if edit_documents_permissions not in super_admin_role.permissions:
+            super_admin_role.permissions.append(edit_documents_permissions)
+
+        if edit_documents_permissions not in user_role.permissions:
+            user_role.permissions.append(edit_documents_permissions)
 
         db.commit()
 
@@ -83,3 +81,6 @@ def initialize_database():
 
     finally:
         db.close()
+
+
+

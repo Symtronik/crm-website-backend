@@ -5,35 +5,36 @@ from sqlalchemy.orm import Session
 from ..config.settings import get_settings
 from ..module.users.crud import get_user
 from ..module.users.models import UserApplication, User
+# from ..module.admin.crud import get_admin_user
 from . import dependencies
 from typing import Union
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(dependencies.get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, get_settings().SECRET_KEY, algorithms=[get_settings().HASHING_ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-
-    user = get_user(db, username=username)
-    if user is not None:
-       return user
-
-    application = db.query(UserApplication).filter(UserApplication.application_token == token).first()
-    if application is not None:
-        return application
-
-    raise credentials_exception
+# def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(dependencies.get_db)):
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+#     try:
+#         payload = jwt.decode(token, get_settings().SECRET_KEY, algorithms=[get_settings().HASHING_ALGORITHM])
+#         username: str = payload.get("sub")
+#         if username is None:
+#             raise credentials_exception
+#     except JWTError:
+#         raise credentials_exception
+#
+#     user = get_user(db, username=username)
+#     if user is not None:
+#        return user
+#
+#     application = db.query(UserApplication).filter(UserApplication.application_token == token).first()
+#     if application is not None:
+#         return application
+#
+#     raise credentials_exception
 
 def get_current_application(token: str = Depends(oauth2_scheme), db: Session = Depends(dependencies.get_db)):
     credentials_exception = HTTPException(
@@ -55,5 +56,54 @@ def get_current_application(token: str = Depends(oauth2_scheme), db: Session = D
         raise credentials_exception
     return application
 
+
+def get_current_user_with_role(token: str = Depends(oauth2_scheme), db: Session = Depends(dependencies.get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        # Dekodowanie tokenu JWT
+        payload = jwt.decode(token, get_settings().SECRET_KEY, algorithms=[get_settings().HASHING_ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    # Pobieranie użytkownika admina
+    user = get_user(db, username=username)
+    if user is None:
+        raise credentials_exception
+
+    # Możesz również sprawdzić rolę admina, np. tylko super_admin ma dostęp do pewnych endpointów
+    # if user.role.name not in ["super_admin", "admin"]:
+    #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    return user
+
+
+# def get_current_admin_application(token: str = Depends(oauth2_scheme), db: Session = Depends(dependencies.get_db)):
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+#     try:
+#         # Dekodowanie tokenu JWT
+#         payload = jwt.decode(token, get_settings().SECRET_KEY, algorithms=[get_settings().HASHING_ALGORITHM])
+#         application_name: str = payload.get("sub")
+#         admin_user_id: int = payload.get("user_id")
+#         if application_name is None or admin_user_id is None:
+#             raise credentials_exception
+#     except JWTError:
+#         raise credentials_exception
+#
+#     # Pobieranie aplikacji admina na podstawie tokenu
+#     application = db.query(AdminUserApplication).filter(AdminUserApplication.application_token == token).first()
+#     if application is None:
+#         raise credentials_exception
+#     return application
 
 

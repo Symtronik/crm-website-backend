@@ -5,6 +5,7 @@ from typing import Optional, List
 class PermissionBase(BaseModel):
     name: str
 
+
 class RoleBase(BaseModel):
     name: str
     permissions: List[PermissionBase] = []
@@ -16,6 +17,11 @@ class UserCreate(BaseModel):
     email: EmailStr
     username: str
     password: str
+    role_id: Optional[int] = None
+
+    class Config:
+        orm_mode = True
+        fields = {'role_id': {'exclude': True}}
 
 
 class UserResponse(BaseModel):
@@ -30,8 +36,6 @@ class UserUpdate(BaseModel):
     surname: Optional[str]
     name: Optional[str]
     email: Optional[EmailStr]
-    # permission: Optional[int]
-    # is_active: Optional[bool]
 
 
 class UserApplicationCreate(BaseModel):

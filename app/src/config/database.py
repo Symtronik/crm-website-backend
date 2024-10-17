@@ -35,6 +35,7 @@ def initialize_database():
 
     try:
         edit_documents_permissions = db.query(Permission).filter_by(name="edit_documents").first()
+        view_user_info_permissions = db.query(Permission).filter_by(name="view_user_info").first()
         super_admin_role = db.query(Role).filter_by(name="super_admin").first()
         admin_role = db.query(Role).filter_by(name="admin").first()
         user_role = db.query(Role).filter_by(name="user").first()
@@ -56,11 +57,16 @@ def initialize_database():
             edit_documents_permissions= Permission(name="edit_documents")
             db.add(edit_documents_permissions)
 
+        if not view_user_info_permissions:
+            view_user_info_permissions = Permission(name="view_user_info")
+            db.add(view_user_info_permissions)
+
         if edit_documents_permissions not in super_admin_role.permissions:
             super_admin_role.permissions.append(edit_documents_permissions)
 
-        if edit_documents_permissions not in user_role.permissions:
-            user_role.permissions.append(edit_documents_permissions)
+
+        if view_user_info_permissions not in super_admin_role.permissions:
+            super_admin_role.permissions.append(view_user_info_permissions)
 
         db.commit()
 

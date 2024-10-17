@@ -11,6 +11,7 @@ from datetime import timedelta
 from app.src.config.settings import get_settings
 from ..common.auth import get_current_user_with_role, get_current_application
 from typing import List
+import logging
 
 router = APIRouter()
 
@@ -18,6 +19,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+logger = logging.getLogger("uvicorn.error")
 
 @router.post("/login", tags=["users"])
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -28,15 +30,22 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Pobierz wszystkie uprawnienia przypisane do roli użytkownika
+    permissions = [perm.name for perm in user.role.permissions]
+
+    # Dodaj role i uprawnienia do danych, które będą w tokenie JWT
     access_token_expires = timedelta(minutes=get_settings().ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.username, "role": user.role.name, "permissions": permissions},
+        expires_delta=access_token_expires
     )
 
     user.refresh_token = access_token
     db.commit()
 
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 
 @router.post("/register", tags=["users"])
@@ -58,6 +67,12 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 @router.get("/user-info/{username}", response_model=UserResponse, tags=["users"])
 def read_user(username: str, db: Session = Depends(get_db),
               current_user: User = Depends(get_current_user_with_role)):
+
+    if not current_user.has_permission("view_user_info"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this resource"
+        )
     db_user = get_user(db, username=username)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -84,9 +99,13 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    roles = [role.name for role in user.roles]
+    permissions = [perm.name for perm in user.permissions]
+
     access_token_expires = timedelta(minutes=get_settings().ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.username, "roles": roles, "permissions": permissions},
+        expires_delta=access_token_expires
     )
 
     user.refresh_token = access_token
@@ -98,6 +117,8 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
 @router.post("/applications", response_model=UserApplicationResponse, tags=["users"])
 def create_application(application: UserApplicationCreate, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_user_with_role)):
+
+
     try:
         new_application = create_application(
             db=db,
@@ -107,6 +128,7 @@ def create_application(application: UserApplicationCreate, db: Session = Depends
         return new_application
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 
 @router.get("/application-info/{application_id}", response_model=UserApplicationResponse, tags=["users"])
@@ -170,3 +192,5 @@ def secure_action(current_user: User = Depends(get_current_user_with_role)):
 
     # Logika dla użytkownika z odpowiednimi uprawnieniami
     return {"message": "You have access to this action!"}
+
+

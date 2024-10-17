@@ -1,7 +1,7 @@
 from . import models, schemas
 from jose import jwt
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from passlib.context import CryptContext

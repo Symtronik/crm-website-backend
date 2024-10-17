@@ -45,7 +45,8 @@ class User(DBBase):
     applications = relationship("UserApplication", back_populates="owner")
 
     def has_permission(self, permission_name: str):
-        return any(p.name == permission_name for p in self.role.permissions)
+        return any(permission.name == permission_name for permission in self.role.permissions)
+
 
 # Model Application (Aplikacja użytkownika)
 class UserApplication(DBBase):
